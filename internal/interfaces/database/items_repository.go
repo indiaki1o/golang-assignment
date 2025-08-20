@@ -166,7 +166,7 @@ func scanItem(scanner interface {
 	Scan(dest ...interface{}) error
 }) (*entity.Item, error) {
 	var item entity.Item
-	var purchaseDate string
+	var purchaseDate time.Time
 	var createdAt, updatedAt time.Time
 
 	err := scanner.Scan(
@@ -175,7 +175,7 @@ func scanItem(scanner interface {
 		&item.Category,
 		&item.Brand,
 		&item.PurchasePrice,
-		&purchaseDate,
+		&purchaseDate, // time.Time型の変数へスキャン
 		&createdAt,
 		&updatedAt,
 	)
@@ -183,14 +183,8 @@ func scanItem(scanner interface {
 		return nil, err
 	}
 
-	if purchaseDate != "" {
-		if parsedDate, err := time.Parse("2006-01-02", purchaseDate); err == nil {
-			item.PurchaseDate = parsedDate.Format("2006-01-02")
-		} else {
-			item.PurchaseDate = purchaseDate
-		}
-	}
-
+	// データベースから読み込んだ値を "YYYY-MM-DD" 形式にフォーマットする
+	item.PurchaseDate = purchaseDate.Format("2006-01-02")
 	item.CreatedAt = createdAt
 	item.UpdatedAt = updatedAt
 
