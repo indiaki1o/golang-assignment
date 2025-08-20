@@ -14,6 +14,30 @@ type ItemRepository struct {
 	SqlHandler
 }
 
+func (r *ItemRepository) Update(ctx context.Context, item *entity.Item) (*entity.Item, error) {
+	// Update - アイテムを更新する
+	// 変更対象は: `name`, `brand`, `purchase_price`
+	query := `
+		UPDATE items
+		SET name = ?, category = ?, brand = ?, purchase_price = ?, purchase_date = ?, updated_at = ?
+		WHERE id = ?
+	`
+	_, err := r.Execute(ctx, query,
+		item.Name,
+		item.Category,
+		item.Brand,
+		item.PurchasePrice,
+		item.PurchaseDate,
+		item.UpdatedAt,
+		item.ID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", domainErrors.ErrDatabaseError, err.Error())
+	}
+
+	return r.FindByID(ctx, item.ID)
+}
+
 func (r *ItemRepository) FindAll(ctx context.Context) ([]*entity.Item, error) {
 	query := `
         SELECT id, name, category, brand, purchase_price, purchase_date, created_at, updated_at
@@ -142,7 +166,7 @@ func scanItem(scanner interface {
 	Scan(dest ...interface{}) error
 }) (*entity.Item, error) {
 	var item entity.Item
-	var purchaseDate string
+	var purchaseDate time.Time
 	var createdAt, updatedAt time.Time
 
 	err := scanner.Scan(
@@ -151,7 +175,7 @@ func scanItem(scanner interface {
 		&item.Category,
 		&item.Brand,
 		&item.PurchasePrice,
-		&purchaseDate,
+		&purchaseDate, // time.Time型の変数へスキャン
 		&createdAt,
 		&updatedAt,
 	)
@@ -159,14 +183,8 @@ func scanItem(scanner interface {
 		return nil, err
 	}
 
-	if purchaseDate != "" {
-		if parsedDate, err := time.Parse("2006-01-02", purchaseDate); err == nil {
-			item.PurchaseDate = parsedDate.Format("2006-01-02")
-		} else {
-			item.PurchaseDate = purchaseDate
-		}
-	}
-
+	// データベースから読み込んだ値を "YYYY-MM-DD" 形式にフォーマットする
+	item.PurchaseDate = purchaseDate.Format("2006-01-02")
 	item.CreatedAt = createdAt
 	item.UpdatedAt = updatedAt
 
