@@ -76,6 +76,33 @@ func TestItemUsecase_UpdateItem(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "正常系: 更新対象外のフィールドは変更されない",
+			id:   1,
+			input: UpdateItemInput{
+				Name: stringp("新しい名前"), // nameだけ更新リクエスト
+			},
+			setupMock: func(mockRepo *MockItemRepository) {
+				// 1. FindByIDで元のアイテムを返す
+				originalItem, _ := entity.NewItem("古い名前", "時計", "ROLEX", 1000000, "2023-01-01")
+				originalItem.ID = 1
+				mockRepo.On("FindByID", mock.Anything, int64(1)).Return(originalItem, nil).Once()
+
+				// 2. Updateメソッドが呼ばれることを検証。
+				//    このとき渡されるItemオブジェクトのcategoryが元の"時計"のままであることを確認する
+				mockRepo.On("Update", mock.Anything, mock.MatchedBy(func(item *entity.Item) bool {
+					// 名前が更新され、カテゴリは元のままであることをassert
+					assert.Equal(t, "新しい名前", item.Name)
+					assert.Equal(t, "時計", item.Category)             // categoryは変更されていない
+					assert.Equal(t, "2023-01-01", item.PurchaseDate) // purchase_dateも変更されていない
+					return true
+				})).Return(func(ctx context.Context, item *entity.Item) *entity.Item {
+					// Updateに渡されたitemをそのまま返すシミュレーション
+					return item
+				}, nil).Once()
+			},
+			expectError: false,
+		},
+		{
 			name:  "正常系: 更新フィールドなし",
 			id:    1,
 			input: UpdateItemInput{},
