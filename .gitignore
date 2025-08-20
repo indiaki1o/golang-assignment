@@ -1,0 +1,12 @@
+# go build binary
+main
+
+# dotenv
+.env
+
+# 
+.vscode/
+.DS_Store
+
+# log
+*.log
