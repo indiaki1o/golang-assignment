@@ -118,6 +118,18 @@ curl -X GET http://localhost:8080/items/summary
 }
 ```
 
+#### 6. アイテムの更新 (PATCH)
+```bash
+curl -X PATCH http://localhost:8080/items/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "エルメス バーキン",
+    "brand": "HERMÈS",
+    "purchase_price": 3000000,
+  }'
+```
+
+
 ### エラーレスポンス形式
 
 ```json
